@@ -38,7 +38,7 @@ def main(
     output_onnx: str,
     valid_depth_window_size=192,
     valid_spatial_window_size=128,
-    num_classes=6,
+    num_classes=1,
     use_stride2=True,
     use_stride4=False,
     do_constant_folding=True,

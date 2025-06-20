@@ -42,7 +42,8 @@ class ObjectDetectionModel(L.LightningModule):
         self.validation_predictions = None
         self.average_tokens_across_devices = train_args.average_tokens_across_devices
         self.num_classes = model.config.num_classes
-        self.class_names = [cls["name"] for cls in (TARGET_6_CLASSES if self.num_classes == 6 else TARGET_5_CLASSES)]
+        #self.class_names = [cls["name"] for cls in (TARGET_6_CLASSES if self.num_classes == 6 else TARGET_5_CLASSES)]
+        self.class_names = ["particle"]
         # fmt: off
         self.register_buffer("thresholds", torch.tensor(
             np.linspace(0.1, 0.9, num=161, dtype=np.float32)
@@ -138,14 +139,16 @@ class ObjectDetectionModel(L.LightningModule):
 
         score_thresholds = self.thresholds.cpu().numpy()
 
-        weights = {
+        '''weights = {
             "apo-ferritin": 1,
             "beta-amylase": 0,
             "beta-galactosidase": 2,
             "ribosome": 1,
             "thyroglobulin": 2,
             "virus-like-particle": 1,
-        }
+        }'''
+        weights = {"particle": 1}
+
 
         all_scores = {}
         all_offsets = {}
@@ -200,7 +203,8 @@ class ObjectDetectionModel(L.LightningModule):
 
             for cls, coord, score in zip(topk_clases, topk_coords, topk_scores):
                 submission["experiment"].append(study_name)
-                submission["particle_type"].append(CLASS_LABEL_TO_CLASS_NAME[int(cls)])
+                #submission["particle_type"].append(CLASS_LABEL_TO_CLASS_NAME[int(cls)])
+                submission["particle_type"].append("particle")
                 submission["score"].append(float(score))
                 submission["x"].append(float(coord[0]))
                 submission["y"].append(float(coord[1]))

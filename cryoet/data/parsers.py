@@ -9,7 +9,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import zarr
 from matplotlib.patches import Circle
-
+import mrcfile
+import pandas as pd
+import glob
 from .functional import normalize_volume_to_unit_range, normalize_volume_with_mean_std
 
 ANGSTROMS_IN_PIXEL = 10.012
@@ -20,46 +22,47 @@ TARGET_5_CLASSES = (
         "label": 0,
         "color": [0, 117, 255],
         "radius": 60,
-        "map_threshold": 0.0418,
+        "map_threshold": 0.02,
     },
     {
         "name": "beta-galactosidase",
         "label": 1,
-        "color": [176, 0, 192],
+        "color": [0, 117, 255],
         "radius": 90,
-        "map_threshold": 0.0578,
+        "map_threshold": 0.02,
     },
     {
         "name": "ribosome",
         "label": 2,
-        "color": [0, 92, 49],
+        "color": [0, 117, 255],
         "radius": 150,
-        "map_threshold": 0.0374,
+        "map_threshold": 0.02,
     },
     {
         "name": "thyroglobulin",
         "label": 3,
-        "color": [43, 255, 72],
+        "color": [0, 117, 255],
         "radius": 130,
-        "map_threshold": 0.0278,
+        "map_threshold": 0.02,
     },
     {
         "name": "virus-like-particle",
         "label": 4,
-        "color": [255, 30, 53],
+        "color": [0, 117, 255],
         "radius": 135,
-        "map_threshold": 0.201,
+        "map_threshold": 0.02,
     },
 )
 
 
 # Note we add beta-amylase as the 6th class (last one)
 TARGET_6_CLASSES = TARGET_5_CLASSES + (
-    {"name": "beta-amylase", "label": 5, "color": [153, 63, 0, 128], "radius": 65, "map_threshold": 0.035},
+    {"name": "beta-amylase", "label": 5, "color": [0, 117, 255], "radius": 65, "map_threshold": 0.02},
 )
 
 CLASS_LABEL_TO_CLASS_NAME = {c["label"]: c["name"] for c in TARGET_6_CLASSES}
-TARGET_SIGMAS = [c["radius"] / ANGSTROMS_IN_PIXEL for c in TARGET_6_CLASSES]
+#TARGET_SIGMAS = [c["radius"] / ANGSTROMS_IN_PIXEL for c in TARGET_6_CLASSES]
+TARGET_SIGMAS = [6]
 
 
 def get_volume(
@@ -107,6 +110,45 @@ def get_volume(
 
     return np.asarray(volume)
 
+def get_volume_sim(
+    root_dir: str | Path, 
+    round_number,
+    tomo_number
+    ):
+
+    volume_path = os.path.join(str(root_dir),tomo_number,round_number,
+    "tomo/*")
+    m = glob.glob(volume_path)
+    with mrcfile.open(m[0], permissive=True) as mrc:
+        tomo_array = mrc.data.astype(np.float32)
+
+    return tomo_array
+
+def get_annotations_sim(root_dir: str | Path, 
+    round_number,
+    tomo_number):
+    
+    centers = []
+    labels = []
+    radii = []
+    coords_path = os.path.join(str(root_dir),tomo_number,round_number,"coords"
+    ,"particle_positions.txt")
+    c = glob.glob(coords_path)
+    df = pd.read_csv(c[0], header=None, names=["protein_name", "x", "y", "z", "fill1", "fill2", "fill3"])
+    coords = df[['x','y','z']].to_numpy() * ANGSTROMS_IN_PIXEL
+    for c in coords:
+        x, y, z = c[0], c[1], c[2]
+        centers.append([x, y, z])
+        labels.append(0)
+        radii.append(60)
+
+        # Convert to NumPy arrays
+    centers = np.array(centers, dtype=np.float32) if centers else np.zeros((0, 3))
+    labels = np.array(labels, dtype=np.int32) if labels else np.zeros((0,))
+    radii = np.array(radii, dtype=np.float32) if radii else np.zeros((0,))
+
+    return centers, labels, radii
+
 
 def get_annotations(
     root_dir: str,
@@ -129,7 +171,7 @@ def get_annotations(
 
     # Build a quick lookup from object "name" -> (label, radius, …)
     target_classes = TARGET_6_CLASSES if use_6_classes else TARGET_5_CLASSES
-    class_dict = {c["name"]: {"label": c.get("label", -1), "radius": c.get("radius", 0)} for c in target_classes}
+    class_dict = {c["name"]: {"label": 0, "radius": c.get("radius", 0)} for c in target_classes}
 
     # e.g., /.../train/overlay/ExperimentRuns/TS_5_4/Picks/
     picks_dir = os.path.join(root_dir, split, "overlay", "ExperimentRuns", study_name, "Picks")
@@ -194,6 +236,26 @@ def get_volume_and_objects(
         study_name,
         use_6_classes=use_6_classes,
         split=split,
+    )
+    return volume, centers, labels, radii
+
+def get_volume_and_objects_sim(
+    root_dir: str | Path,
+    round_number,
+    tomo_number
+):
+    """
+    Convenience function:
+      1) Loads the entire 3D volume for the given study & mode.
+      2) Loads the object centers, labels, and radii from the JSON picks.
+
+    Returns (volume, centers, labels, radii).
+    """
+    volume = get_volume_sim(root_dir, round_number, tomo_number)
+    centers, labels, radii = get_annotations_sim(
+        root_dir,
+        round_number,
+        tomo_number
     )
     return volume, centers, labels, radii
 
@@ -423,6 +485,30 @@ def read_annotated_volume(root, study, mode, use_6_classes: bool, normalization:
         mode=mode,
         split=split,
         use_6_classes=use_6_classes,
+    )
+
+    normalization_fn = {
+        "minmax": normalize_volume_to_unit_range,
+        "meanstd": normalize_volume_with_mean_std,
+    }[normalization]
+
+    return AnnotatedVolume(
+        study=study,
+        split=split,
+        mode=mode,
+        volume=normalization_fn(volume_data),
+        centers=object_centers,
+        labels=object_labels,
+        radius=object_radii,
+        centers_px=object_centers / ANGSTROMS_IN_PIXEL,
+        radius_px=object_radii / ANGSTROMS_IN_PIXEL,
+    )
+
+def read_annotated_volume_sim(root, study, mode, use_6_classes: bool, normalization: str, split="train"):
+    volume_data, object_centers, object_labels, object_radii = get_volume_and_objects_sim(
+        root_dir=root,
+        round_number=study,
+        tomo_number=mode,
     )
 
     normalization_fn = {

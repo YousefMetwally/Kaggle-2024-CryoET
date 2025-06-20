@@ -58,6 +58,7 @@ def score_submission(
         "ribosome": 150,
         "thyroglobulin": 130,
         "virus-like-particle": 135,
+        'particle' : 60
     }
 
     weights = {
@@ -67,6 +68,7 @@ def score_submission(
         "ribosome": 1,
         "thyroglobulin": 2,
         "virus-like-particle": 1,
+        'particle' : 1
     }
 
     particle_radius = {k: v * distance_multiplier for k, v in particle_radius.items()}

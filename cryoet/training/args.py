@@ -14,7 +14,7 @@ def data_root_default_factory():
 @dataclass
 class ModelArguments:
     model_name: str = field(
-        default="segresnet",
+        default="segresnetv2",
     )
     pretrained_model_name_or_path: str = field(
         default=None,
@@ -110,8 +110,8 @@ class DataArguments:
 
     use_random_flips: bool = field(default=True)
 
-    train_modes: str = field(default="denoised")
-    valid_modes: str = field(default="denoised")
+    train_modes: str = field(default="wbp")
+    valid_modes: str = field(default="wbp")
 
     num_crops_per_study: int = field(default=256)
 
@@ -190,13 +190,13 @@ class MyTrainingArguments(TrainingArguments):
 
     load_best_model_at_end: bool = field(default=True, metadata={"help": "Load best model at the end"})
 
-    ddp_find_unused_parameters: bool = field(default=False, metadata={"help": "DDP find unused parameters"})
+    ddp_find_unused_parameters: bool = field(default=True, metadata={"help": "DDP find unused parameters"})
 
     metric_for_best_model: str = field(default="eval_loss", metadata={"help": "Metric for best model"})
 
     greater_is_better: bool = field(default=False, metadata={"help": "Greater is better"})
 
-    learning_rate: float = field(default=3e-4, metadata={"help": "Learning rate"})
+    learning_rate: float = field(default=5e-5, metadata={"help": "Learning rate"})
     weight_decay: float = field(default=0.0001, metadata={"help": "Weight decay"})
 
     report_to: typing.Union[str, typing.List[str]] = field(default="tensorboard", metadata={"help": "Report to"})
@@ -212,7 +212,7 @@ class MyTrainingArguments(TrainingArguments):
     ema_decay: float = field(default=0.995, metadata={"help": "Exponential moving average decay"})
     ema_beta: float = field(default=10, metadata={"help": "Exponential moving average beta"})
 
-    early_stopping: int = field(default=0, metadata={"help": "Early stopping"})
+    early_stopping: int = field(default=10, metadata={"help": "Early stopping"})
 
     use_l1_loss: bool = field(default=False, metadata={"help": "If true, adds L1 loss on offsets prediction"})
 

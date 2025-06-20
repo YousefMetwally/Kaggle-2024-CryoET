@@ -17,7 +17,7 @@ from transformers import (
     HfArgumentParser,
 )
 
-from cryoet.data.detection.data_module import ObjectDetectionDataModule
+from cryoet.data.detection.data_module import ObjectDetectionDataModule , ObjectDetectionDataModule_sim
 from cryoet.ensembling import average_checkpoints, trace_model_and_save
 from cryoet.modelling.detection.convnext import ConvNextForObjectDetectionConfig, ConvNextForObjectDetection
 from cryoet.modelling.detection.dynunet import DynUNetForObjectDetectionConfig, DynUNetForObjectDetection
@@ -64,7 +64,7 @@ def main():
         training_args.master_print(f"Model parameters: {count_parameters(model, human_friendly=True)}")
 
         with fabric.rank_zero_first():
-            data_module = ObjectDetectionDataModule(
+            data_module = ObjectDetectionDataModule_sim(
                 data_args=data_args,
                 train_args=training_args,
                 model_args=model_args,
@@ -126,7 +126,7 @@ def main():
             fabric.print(f"Using EMA with decay={training_args.ema_decay} and beta={training_args.ema_beta}")
 
         fabric.print("Batch Size:", training_args.per_device_train_batch_size, training_args.per_device_eval_batch_size)
-
+        print(data_module.train_modes)
         trainer = L.Trainer(
             strategy=strategy,
             max_epochs=int(training_args.num_train_epochs),
@@ -187,9 +187,11 @@ def main():
         print(metrics)
 
         # new name
-        metrics_suffix = "averaged-score-{val/score:0.4f}-at-{val/apo-ferritin_threshold:0.3f}-{val/beta-galactosidase_threshold:0.3f}-{val/ribosome_threshold:0.3f}-{val/thyroglobulin_threshold:0.3f}-{val/virus-like-particle_threshold:0.3f}".format(
-            **metrics[0]
-        )
+        #metrics_suffix = "averaged-score-{val/score:0.4f}-at-{val/apo-ferritin_threshold:0.3f}-{val/beta-galactosidase_threshold:0.3f}-{val/ribosome_threshold:0.3f}-{val/thyroglobulin_threshold:0.3f}-{val/virus-like-particle_threshold:0.3f}".format(
+        #    **metrics[0]
+        #)
+        metrics_suffix = "averaged-score-{val/score:0.4f}".format(**metrics[0])
+        
         new_averaged_filename = f"{timestamp}_{model_name_slug}_{metrics_suffix}"
         new_averaged_filepath = models_output_dir / f"{new_averaged_filename}.pt"
 
@@ -213,7 +215,8 @@ def main():
 
 
 def create_model_from_args(model_args, training_args):
-    num_classes = 6 if model_args.use_6_classes else 5
+    #num_classes = 6 if model_args.use_6_classes else 5
+    num_classes = 1
     if model_args.model_name == "segresnet_s1":
         config = SegResNetForObjectDetectionS1Config(
             num_classes=num_classes,

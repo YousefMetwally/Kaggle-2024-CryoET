@@ -181,7 +181,7 @@ class SegResNetForObjectDetectionV2Config(PretrainedConfig):
         blocks_up=(1, 1, 1),
         dropout_prob=0.2,
         head_dropout_prob=0,
-        num_classes=5,
+        num_classes=1,
         use_stride4: bool = True,
         use_stride2: bool = True,
         use_offset_head: bool = True,

@@ -27,7 +27,6 @@ class SlidingWindowCryoETObjectDetectionDataset(CryoETObjectDetectionDataset, Ob
             model_args.valid_spatial_num_tiles,
             model_args.valid_spatial_num_tiles,
         )
-
         self.tiles = list(
             compute_better_tiles_with_num_tiles(self.sample.volume_shape, window_size=self.window_size, num_tiles=self.num_tiles)
         )
