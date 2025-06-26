@@ -8,7 +8,9 @@ from .detection_dataset import CryoETObjectDetectionDataset, apply_augmentations
 from .mixin import ObjectDetectionMixin
 from ..parsers import AnnotatedVolume
 from ...training.args import DataArguments, ModelArguments
-
+from ..functional import normalize_volume_to_unit_range, normalize_volume_with_mean_std
+import mrcfile
+import numpy as np
 
 class RandomCropForPointDetectionDataset(CryoETObjectDetectionDataset, ObjectDetectionMixin):
     def __init__(
@@ -31,7 +33,11 @@ class RandomCropForPointDetectionDataset(CryoETObjectDetectionDataset, ObjectDet
         self.copy_paste_samples = copy_paste_samples
 
     def __getitem__(self, idx):
-        volume_shape = self.sample.volume_shape
+        normalization_fn = normalize_volume_to_unit_range
+        with mrcfile.open(self.sample.volume, permissive=True) as mrc:
+            tomo_array = mrc.data.astype(np.float32)
+            
+        volume_shape = tomo_array.shape
 
         center_xyz = (
             random.random() * volume_shape[2],
@@ -41,8 +47,11 @@ class RandomCropForPointDetectionDataset(CryoETObjectDetectionDataset, ObjectDet
 
         interpolation_mode = sample_interpolation_mode(self.data_args)
 
+        normalization_fn = normalize_volume_to_unit_range
+        with mrcfile.open(self.sample.volume, permissive=True) as mrc:
+            tomo_array = mrc.data.astype(np.float32)
         data = random_crop_around_point(
-            volume=self.sample.volume,
+            volume=normalization_fn(tomo_array),
             centers=self.sample.centers_px,
             labels=self.sample.labels,
             radius=self.sample.radius_px,

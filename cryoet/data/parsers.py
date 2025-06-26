@@ -113,16 +113,14 @@ def get_volume(
 def get_volume_sim(
     root_dir: str | Path, 
     round_number,
-    tomo_number
-    ):
-
-    volume_path = os.path.join(str(root_dir),tomo_number,round_number,
-    "tomo/*")
+    tomo_number):
+    volume_path = os.path.join(str(root_dir), tomo_number, round_number, "tomo/*")
     m = glob.glob(volume_path)
-    with mrcfile.open(m[0], permissive=True) as mrc:
-        tomo_array = mrc.data.astype(np.float32)
-
-    return tomo_array
+    if not m:
+        raise FileNotFoundError(f"No MRC file found at {volume_path}")
+    #with mrcfile.mrcmemmap.MrcMemmap(m[0], permissive=True, mode='r') as mrc:
+    #    tomo_array = mrc.data  # This is now a numpy.memmap object
+    return m[0]  # Still behaves like a numpy array, but memory-mapped
 
 def get_annotations_sim(root_dir: str | Path, 
     round_number,
@@ -406,7 +404,7 @@ class AnnotatedVolume:
     mode: str
     split: str
 
-    volume: np.ndarray
+    volume: str
 
     centers: np.ndarray
     labels: np.ndarray
@@ -417,7 +415,9 @@ class AnnotatedVolume:
 
     @property
     def volume_shape(self) -> Tuple[int, int, int]:
-        depth, height, width = self.volume.shape
+        with mrcfile.open(self.volume, permissive=True) as mrc:
+            tomo_array = mrc.data.astype(np.float32)
+        depth, height, width = tomo_array.shape
         return (depth, height, width)
 
     def rot90(self, k: int):
@@ -510,6 +510,7 @@ def read_annotated_volume_sim(root, study, mode, use_6_classes: bool, normalizat
         round_number=study,
         tomo_number=mode,
     )
+    print(volume_data)
 
     normalization_fn = {
         "minmax": normalize_volume_to_unit_range,
@@ -520,7 +521,7 @@ def read_annotated_volume_sim(root, study, mode, use_6_classes: bool, normalizat
         study=study,
         split=split,
         mode=mode,
-        volume=normalization_fn(volume_data),
+        volume=volume_data,
         centers=object_centers,
         labels=object_labels,
         radius=object_radii,

@@ -275,8 +275,8 @@ class ObjectDetectionDataModule_sim(L.LightningDataModule):
                         for y_flip in y_options:
                             for z_flip in z_options:
                                 print("Flipping", x_flip, y_flip, z_flip)
-                                maybe_flipped_sample = sample.rot90(rot).flip(x_flip, y_flip, z_flip)
-
+                                #maybe_flipped_sample = sample.rot90(rot).flip(x_flip, y_flip, z_flip)
+                                maybe_flipped_sample = sample
                                 sliding_dataset = SlidingWindowCryoETObjectDetectionDataset(
                                     sample=maybe_flipped_sample,
                                     data_args=data_args,

@@ -5,7 +5,9 @@ from .mixin import ObjectDetectionMixin
 from ..functional import compute_better_tiles_with_num_tiles
 from ..parsers import AnnotatedVolume
 from ...training.args import DataArguments, ModelArguments
-
+from ..functional import normalize_volume_to_unit_range, normalize_volume_with_mean_std
+import mrcfile
+import numpy as np
 
 class SlidingWindowCryoETObjectDetectionDataset(CryoETObjectDetectionDataset, ObjectDetectionMixin):
 
@@ -26,7 +28,7 @@ class SlidingWindowCryoETObjectDetectionDataset(CryoETObjectDetectionDataset, Ob
             model_args.valid_depth_num_tiles,
             model_args.valid_spatial_num_tiles,
             model_args.valid_spatial_num_tiles,
-        )
+        )  
         self.tiles = list(
             compute_better_tiles_with_num_tiles(self.sample.volume_shape, window_size=self.window_size, num_tiles=self.num_tiles)
         )
@@ -47,8 +49,11 @@ class SlidingWindowCryoETObjectDetectionDataset(CryoETObjectDetectionDataset, Ob
                 (centers_x >= tile[2].start) & (centers_x < tile[2].stop)
         )
         # fmt: on
-
-        volume = self.sample.volume[tile[0], tile[1], tile[2]].copy()
+        with mrcfile.open(self.sample.volume, permissive=True) as mrc:
+            tomo_array = mrc.data.astype(np.float32)
+        normalization_fn = normalize_volume_to_unit_range
+        tomo_array = normalization_fn(tomo_array)
+        volume = tomo_array[tile[0], tile[1], tile[2]].copy()
         centers_px = centers_px[keep_mask].copy() - np.array([tile[2].start, tile[1].start, tile[0].start]).reshape(1, 3)
         radii_px = radii_px[keep_mask].copy()
         object_labels = object_labels[keep_mask].copy()

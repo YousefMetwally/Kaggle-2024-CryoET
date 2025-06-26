@@ -10,7 +10,9 @@ from .detection_dataset import CryoETObjectDetectionDataset, apply_augmentations
 from .mixin import ObjectDetectionMixin
 from ..parsers import AnnotatedVolume
 from ...training.args import DataArguments, ModelArguments
-
+from ..functional import normalize_volume_to_unit_range, normalize_volume_with_mean_std
+import mrcfile
+import numpy as np
 
 class InstanceCropDatasetForPointDetection(CryoETObjectDetectionDataset, ObjectDetectionMixin):
     def __init__(
@@ -48,9 +50,11 @@ class InstanceCropDatasetForPointDetection(CryoETObjectDetectionDataset, ObjectD
             center = random.choice(centers_px)
 
         interpolation_mode = sample_interpolation_mode(self.data_args)
-
+        with mrcfile.open(self.sample.volume, permissive=True) as mrc:
+            tomo_array = mrc.data.astype(np.float32)
+        normalization_fn = normalize_volume_to_unit_range
         data = random_crop_around_point(
-            volume=self.sample.volume,
+            volume=normalization_fn(tomo_array),
             centers=self.sample.centers_px,
             labels=self.sample.labels,
             radius=self.sample.radius_px,

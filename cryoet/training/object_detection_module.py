@@ -73,14 +73,19 @@ class ObjectDetectionModel(L.LightningModule):
             use_cross_entropy_loss=self.model_args.use_cross_entropy_loss,
             **loss_kwargs,
         )
-
+    
     def training_step(self, batch, batch_idx):
         outputs = self(
             **batch,
         )
-
+        def safe_detach(value):
+            if isinstance(value, torch.Tensor):
+                return value.detach().cpu().item() if value.numel() == 1 else value.detach().cpu()
+            elif isinstance(value, (list, tuple)):
+                return [safe_detach(v) for v in value]
+            return value  # fallback (e.g., float or int)
         self.log_dict(
-            dict(("train/" + k, v) for k, v in outputs.loss_dict.items()),
+            dict(("train/" + k, safe_detach(v)) for k, v in outputs.loss_dict.items()),
             batch_size=len(batch["volume"]),
             sync_dist=True,
             on_step=True,
@@ -263,6 +268,9 @@ class ObjectDetectionModel(L.LightningModule):
             sync_dist=True,
             rank_zero_only=False,
         )
+
+        del scores, offsets
+        torch.cuda.empty_cache()
 
     def log_plots(self, plots: Dict[str, Tuple[np.ndarray, np.ndarray]], x_title, y_title):
         if self.trainer.is_global_zero:
