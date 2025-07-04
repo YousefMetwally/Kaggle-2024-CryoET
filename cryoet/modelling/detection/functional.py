@@ -321,7 +321,8 @@ def decode_detections_with_nms(
 
         class_scores = scores[mask, class_index]  # shape: [Nc]
         class_centers = centers[mask]  # shape: [Nc, 3]
-
+        print(len(class_scores))
+        
         if pre_nms_top_k is not None and len(class_scores) > pre_nms_top_k:
             class_scores, sort_idx = torch.topk(class_scores, pre_nms_top_k, largest=True, sorted=True)
             class_centers = class_centers[sort_idx]
