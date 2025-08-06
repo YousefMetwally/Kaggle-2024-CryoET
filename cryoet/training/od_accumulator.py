@@ -3,7 +3,7 @@ from typing import Tuple, List
 
 import torch
 from torch import Tensor
-
+import matplotlib.pyplot as plt
 
 @dataclasses.dataclass
 class AccumulatedObjectDetectionPredictionContainer:
@@ -13,7 +13,9 @@ class AccumulatedObjectDetectionPredictionContainer:
     strides: List[int]
     window_size: Tuple[int, int, int]
     use_weighted_average: bool
-    weight_tensor: List[Tensor] = None
+    sigma: int
+    weight_tensors: List[Tensor] = None
+    
 
     @classmethod
     def from_shape(
@@ -22,9 +24,11 @@ class AccumulatedObjectDetectionPredictionContainer:
         window_size: Tuple[int, int, int],
         num_classes: int,
         strides: List[int],
+        sigma: int,
         device="cpu",
         dtype=torch.float32,
         use_weighted_average: bool = False,
+        
     ):
         d, h, w = shape
 
@@ -36,17 +40,21 @@ class AccumulatedObjectDetectionPredictionContainer:
             strides=list(strides),
             window_size=window_size,
             use_weighted_average=use_weighted_average,
+            sigma = sigma
         )
         # fmt: on
 
     def __post_init__(self):
+        print(self.use_weighted_average)
         if self.use_weighted_average:
             output_window_sizes = [
                 (self.window_size[0] // s, self.window_size[1] // s, self.window_size[2] // s) for s in self.strides
             ]
             self.weight_tensors = [
-                self.compute_weight_matrix(torch.zeros((1, *s), device=self.scores[0].device)) for s in output_window_sizes
+                self.compute_weight_matrix_new(torch.zeros((1, *s), device=self.scores[0].device),border_thickness= self.sigma) for s in output_window_sizes
             ]
+            visualize_weight_tensor(self.weight_tensors[0],f'{self.sigma}')
+            print('weight_tensors', self.weight_tensors[0].shape)
 
     def __iadd__(self, other):
         if self.strides != other.strides:
@@ -142,6 +150,31 @@ class AccumulatedObjectDetectionPredictionContainer:
 
         # I just like the look of heatmap
         return weight**3
+    
+    @classmethod
+    def compute_weight_matrix_new(cls, scores_volume: Tensor, border_thickness=2):
+        """
+        Returns a binary weight matrix with 1s in the center and 0s at the borders.
+        Border thickness is defined in voxels from each side.
+        :param scores_volume: Tensor of shape (C, D, H, W)
+        :param border_thickness: Number of voxels to zero out from each edge
+        :return: Tensor of shape (D, H, W)
+        """
+        D, H, W = scores_volume.shape[1:]
+
+        weight = torch.ones((D, H, W), device=scores_volume.device)
+
+        # Zero out borders in each dimension
+        weight[:border_thickness, :, :] = 0  # Top
+        weight[-border_thickness:, :, :] = 0  # Bottom
+
+        weight[:, :border_thickness, :] = 0  # Left
+        weight[:, -border_thickness:, :] = 0  # Right
+
+        weight[:, :, :border_thickness] = 0  # Front
+        weight[:, :, -border_thickness:] = 0  # Back
+
+        return weight
 
     def merge_(self):
         num_feature_maps = len(self.scores)
@@ -156,3 +189,27 @@ class AccumulatedObjectDetectionPredictionContainer:
             self.offsets[i].masked_fill_(zero_mask, 0.0)
 
         return self.scores, self.offsets
+
+
+def visualize_weight_tensor(tensor, title_prefix=""):
+    """
+    tensor: 3D PyTorch tensor (D, H, W)
+    """
+    d, h, w = tensor.shape
+    center_d, center_h, center_w = d // 2, h // 2, w // 2
+
+    fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+    
+    axs[0].imshow(tensor[center_d].cpu().numpy(), cmap='hot')
+    axs[0].set_title(f'{title_prefix} Slice Z={center_d}')
+    
+    axs[1].imshow(tensor[:, center_h, :].cpu().numpy(), cmap='hot')
+    axs[1].set_title(f'{title_prefix} Slice Y={center_h}')
+    
+    axs[2].imshow(tensor[:, :, center_w].cpu().numpy(), cmap='hot')
+    axs[2].set_title(f'{title_prefix} Slice X={center_w}')
+    
+    for ax in axs:
+        ax.axis('off')
+    plt.tight_layout()
+    plt.show()

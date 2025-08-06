@@ -43,6 +43,7 @@ def predict_volume(
     use_z_flip_tta: bool,
     use_y_flip_tta: bool,
     use_x_flip_tta: bool,
+    sigma: int
 ):
     scores, offsets = predict_scores_offsets_from_volume(
         volume=volume,
@@ -59,6 +60,7 @@ def predict_volume(
         use_z_flip_tta=use_z_flip_tta,
         use_y_flip_tta=use_y_flip_tta,
         use_x_flip_tta=use_x_flip_tta,
+        sigma=sigma
     )
 
     submission = postprocess_scores_offsets_into_submission(
@@ -98,7 +100,7 @@ def postprocess_scores_offsets_into_submission(
         pre_nms_top_k=pre_nms_top_k,
     )
     topk_scores = topk_scores.float().cpu().numpy()
-    top_coords = topk_coords_px.float().cpu().numpy() * ANGSTROMS_IN_PIXEL
+    top_coords = topk_coords_px.float().cpu().numpy() #* ANGSTROMS_IN_PIXEL
     topk_clses = topk_clses.cpu().numpy()
     submission = dict(
         experiment=[],
@@ -135,6 +137,7 @@ def predict_scores_offsets_from_volume(
     use_z_flip_tta: bool,
     use_y_flip_tta: bool,
     use_x_flip_tta: bool,
+    sigma: int
 ):
     torch.cuda.empty_cache()
     container = None
@@ -167,7 +170,9 @@ def predict_scores_offsets_from_volume(
                     strides=output_strides,
                     device=device,
                     dtype=torch_dtype,
+                    sigma=sigma
                 )
+            #container.__post_init__()
 
             container.accumulate_batch(probas, offsets, tile_offsets)
 
