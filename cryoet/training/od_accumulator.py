@@ -24,7 +24,7 @@ class AccumulatedObjectDetectionPredictionContainer:
         window_size: Tuple[int, int, int],
         num_classes: int,
         strides: List[int],
-        sigma: int,
+       # sigma: int,
         device="cpu",
         dtype=torch.float32,
         use_weighted_average: bool = False,
@@ -40,21 +40,23 @@ class AccumulatedObjectDetectionPredictionContainer:
             strides=list(strides),
             window_size=window_size,
             use_weighted_average=use_weighted_average,
-            sigma = sigma
+         #   sigma = sigma
         )
         # fmt: on
 
     def __post_init__(self):
-        print(self.use_weighted_average)
+        #print(self.use_weighted_average)
         if self.use_weighted_average:
             output_window_sizes = [
                 (self.window_size[0] // s, self.window_size[1] // s, self.window_size[2] // s) for s in self.strides
             ]
             self.weight_tensors = [
-                self.compute_weight_matrix_new(torch.zeros((1, *s), device=self.scores[0].device),border_thickness= self.sigma) for s in output_window_sizes
-            ]
-            visualize_weight_tensor(self.weight_tensors[0],f'{self.sigma}')
-            print('weight_tensors', self.weight_tensors[0].shape)
+                self.compute_weight_matrix(torch.zeros((1, *s), device=self.scores[0].device)) for s in output_window_sizes ]
+            #self.weight_tensors = [
+            #    self.compute_weight_matrix_new(torch.zeros((1, *s), device=self.scores[0].device),border_thickness= self.sigma) for s in output_window_sizes
+            #]
+            #visualize_weight_tensor(self.weight_tensors[0],f'{self.sigma}')
+            #print('weight_tensors', self.weight_tensors[0].shape)
 
     def __iadd__(self, other):
         if self.strides != other.strides:

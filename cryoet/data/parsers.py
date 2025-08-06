@@ -14,7 +14,10 @@ import pandas as pd
 import glob
 from .functional import normalize_volume_to_unit_range, normalize_volume_with_mean_std
 
-ANGSTROMS_IN_PIXEL = 10.012
+ANGSTROMS_IN_PIXEL = 10.0
+
+with open('/mnt/data2/D2/OD/Data/boxsizes.json') as json_data:
+    SIGMAS = json.load(json_data)
 
 TARGET_5_CLASSES = (
     {
@@ -134,12 +137,20 @@ def get_annotations_sim(root_dir: str | Path,
     c = glob.glob(coords_path)
     df = pd.read_csv(c[0], header=None, names=["protein_name", "x", "y", "z", "fill1", "fill2", "fill3"])
     coords = df[['x','y','z']].to_numpy() * ANGSTROMS_IN_PIXEL
-    for c in coords:
-        x, y, z = c[0], c[1], c[2]
+    names = df["protein_name"].to_numpy()
+    for coord, name in zip(coords, names):
+        if name == "vesicle":
+            continue  # skip vesicle
+        if name not in SIGMAS:
+            r = 15
+        else:
+            r = int ((SIGMAS[name] - 0.1*SIGMAS[name])*0.5)
+        print(name, r)
+        x, y, z = coord
         centers.append([x, y, z])
-        labels.append(0)
-        radii.append(60)
-
+        labels.append(0)  # if all same label; adjust if needed
+        radii.append(r * ANGSTROMS_IN_PIXEL)
+    
         # Convert to NumPy arrays
     centers = np.array(centers, dtype=np.float32) if centers else np.zeros((0, 3))
     labels = np.array(labels, dtype=np.int32) if labels else np.zeros((0,))
