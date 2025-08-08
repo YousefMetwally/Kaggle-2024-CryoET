@@ -13,7 +13,7 @@ class AccumulatedObjectDetectionPredictionContainer:
     strides: List[int]
     window_size: Tuple[int, int, int]
     use_weighted_average: bool
-    sigma: int
+    #sigma: int
     weight_tensors: List[Tensor] = None
     
 
