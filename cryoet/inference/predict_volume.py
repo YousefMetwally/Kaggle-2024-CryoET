@@ -43,7 +43,7 @@ def predict_volume(
     use_z_flip_tta: bool,
     use_y_flip_tta: bool,
     use_x_flip_tta: bool,
-   # sigma: int
+    sigma: Union[int, Tuple[int, int, int]]
 ):
     scores, offsets = predict_scores_offsets_from_volume(
         volume=volume,
@@ -60,7 +60,7 @@ def predict_volume(
         use_z_flip_tta=use_z_flip_tta,
         use_y_flip_tta=use_y_flip_tta,
         use_x_flip_tta=use_x_flip_tta,
-     #   sigma=sigma
+        sigma=sigma
     )
 
     submission = postprocess_scores_offsets_into_submission(
@@ -100,7 +100,7 @@ def postprocess_scores_offsets_into_submission(
         pre_nms_top_k=pre_nms_top_k,
     )
     topk_scores = topk_scores.float().cpu().numpy()
-    top_coords = topk_coords_px.float().cpu().numpy() * ANGSTROMS_IN_PIXEL
+    top_coords = topk_coords_px.float().cpu().numpy() 
     topk_clses = topk_clses.cpu().numpy()
     submission = dict(
         experiment=[],
@@ -137,13 +137,13 @@ def predict_scores_offsets_from_volume(
     use_z_flip_tta: bool,
     use_y_flip_tta: bool,
     use_x_flip_tta: bool,
-    #sigma: int
+    sigma: Union[int, Tuple[int, int, int]]
 ):
     torch.cuda.empty_cache()
     container = None
     volume = normalize_volume_to_unit_range(volume)
     # volume = normalize_volume_to_percentile_range(volume)
-    ds = TileDataset(volume, window_size, tiles_per_dim, torch_dtype=torch_dtype)
+    ds = TileDataset(volume, window_size, sigma, torch_dtype=torch_dtype)
     for tile_volume, tile_offsets in tqdm(
         DataLoader(ds, batch_size=batch_size, num_workers=num_workers, drop_last=False, pin_memory=True),
         desc=f"{study_name} {volume.shape}",
@@ -170,7 +170,7 @@ def predict_scores_offsets_from_volume(
                     strides=output_strides,
                     device=device,
                     dtype=torch_dtype,
-                  #  sigma=sigma
+                    sigma=sigma
                 )
             #container.__post_init__()
 

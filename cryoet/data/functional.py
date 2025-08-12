@@ -47,6 +47,12 @@ def compute_better_tiles_1d(length: int, window_size: int, num_tiles: int):
     for start, end in zip(starts, ends):
         yield slice(start, end)
 
+def compute_better_tiles_1d_yousef(length: int, window_size: int, step:int, num_tiles: int):
+
+    starts = np.arange(num_tiles) * (window_size - step)
+    ends = np.minimum(starts + window_size , length)
+    for start, end in zip(starts, ends):
+        yield slice(start, end)
 
 def compute_tiles(
     volume_shape: Tuple[int, int, int], window_size: Union[int, Tuple[int, int, int]], stride: Union[int, Tuple[int, int, int]]
@@ -106,6 +112,30 @@ def compute_better_tiles(
                     x_slice,
                 )
 
+def compute_better_tiles_yousef(
+    volume_shape: Tuple[int, int, int],
+    window_size: Union[int, Tuple[int, int, int]],
+    window_step: Union[int, Tuple[int, int, int]],
+) -> Iterable[Tuple[slice, slice, slice]]:
+    """Compute the slices for a sliding window over a volume.
+    A method can output a last slice that is smaller than the window size.
+    """
+    window_size_z, window_size_y, window_size_x = as_tuple_of_3(window_size)
+    window_step_z, window_step_y, window_step_x = as_tuple_of_3(window_step)
+    z, y, x = volume_shape
+
+    num_z_tiles = math.ceil(z / (window_size_z - window_step_z))
+    num_y_tiles = math.ceil(y / (window_size_y - window_step_y))
+    num_x_tiles = math.ceil(x / (window_size_x - window_step_x))
+
+    for z_slice in compute_better_tiles_1d_yousef(z, window_size_z,window_step_z, num_z_tiles):
+        for y_slice in compute_better_tiles_1d_yousef(y, window_size_y,window_step_y, num_y_tiles):
+            for x_slice in compute_better_tiles_1d_yousef(x, window_size_x,window_step_x, num_x_tiles):
+                yield (
+                    z_slice,
+                    y_slice,
+                    x_slice,
+                )
 
 def compute_better_tiles_with_num_tiles(
     volume_shape: Tuple[int, int, int],

@@ -4,17 +4,17 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-from cryoet.data.functional import compute_better_tiles_with_num_tiles, as_tuple_of_3
+from cryoet.data.functional import compute_better_tiles_with_num_tiles, as_tuple_of_3 , compute_better_tiles_yousef
 
 
 class TileDataset(Dataset):
     def __init__(self, volume, window_size: Union[int, Tuple[int, int, int]], tiles_per_dim: Tuple[int, int, int], torch_dtype):
         self.volume = volume
-        self.tiles = list(compute_better_tiles_with_num_tiles(volume.shape, window_size, tiles_per_dim))
-        #print(len(self.tiles))
-        #print('tiles: ')
-        #for t in self.tiles:
-        #    print(t)
+        self.tiles = list(compute_better_tiles_yousef(volume.shape, window_size, tiles_per_dim))
+        print(len(self.tiles))
+        print('tiles: ')
+        for t in self.tiles:
+            print(t)
         
         self.window_size = as_tuple_of_3(window_size)
         self.torch_dtype = torch_dtype
@@ -29,13 +29,14 @@ class TileDataset(Dataset):
         pad_z = self.window_size[0] - tile_volume.shape[0]
         pad_y = self.window_size[1] - tile_volume.shape[1]
         pad_x = self.window_size[2] - tile_volume.shape[2]
-        #print('padding z y x : ', pad_z, pad_y, pad_x)
+        print('padding z y x : ', pad_z, pad_y, pad_x)
         tile_volume = np.pad(
             tile_volume,
             ((0, pad_z), (0, pad_y), (0, pad_x)),
             mode="constant",
             constant_values=0,
         )
+        print(tile_volume.shape)
 
         tile_offsets = (tile[0].start, tile[1].start, tile[2].start)
 
