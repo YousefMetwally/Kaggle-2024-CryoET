@@ -1,3 +1,11 @@
 data/
 .idea/
 .env
+.pyc
+*.csv
+*.coords
+__pycache__/
+*.py[cod]
+*.onnx
+*.zip
+*.jit

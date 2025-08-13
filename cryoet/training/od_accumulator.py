@@ -141,7 +141,7 @@ class AccumulatedObjectDetectionPredictionContainer:
 
             counter_view += weight_view
             scores_view += scores.to(scores_view.device) * weight_view
-            visualize_scores_update(scores_view_before, scores_view, weight_view, title=f"Feature map {i}")
+            #visualize_scores_update(scores_view_before, scores_view, weight_view, title=f"Feature map {i}")
             offsets_view += offsets.to(offsets_view.device) * weight_view
 
     @classmethod
