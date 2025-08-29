@@ -277,7 +277,7 @@ def decode_detections_with_nms(
     # Number of classes is the second dimension of `scores`
     # e.g. scores shape = (C, D, H, W)
     num_classes = scores[0].shape[0] 
-    print('num_classes', num_classes) # the 'C' dimension
+    #print('num_classes', num_classes) # the 'C' dimension
 
     # Allow min_score to be a single value or a list of values
     min_score = np.asarray(min_score, dtype=np.float32).reshape(-1)

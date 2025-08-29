@@ -145,7 +145,7 @@ def get_annotations_sim(root_dir: str | Path,
             r = 15
         else:
             r = int ((SIGMAS[name] - 0.1*SIGMAS[name])*0.5)
-        print(name, r)
+        #print(name, r)
         x, y, z = coord
         centers.append([x, y, z])
         labels.append(0)  # if all same label; adjust if needed

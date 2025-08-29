@@ -67,7 +67,7 @@ class AccumulatedObjectDetectionPredictionContainer:
             self.weight_tensors = [
                 self.compute_weight_matrix_new(torch.zeros((1, *s), device=self.scores[0].device),border_thickness= sigma) for s in output_window_sizes
             ]
-            visualize_weight_tensor(self.weight_tensors[0],f'{self.sigma}')
+            #visualize_weight_tensor(self.weight_tensors[0],f'{self.sigma}')
             print('weight_tensors', self.weight_tensors[0].shape)
 
     def __iadd__(self, other):
