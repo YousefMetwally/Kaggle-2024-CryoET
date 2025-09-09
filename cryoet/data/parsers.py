@@ -144,7 +144,7 @@ def get_annotations_sim(root_dir: str | Path,
         if name not in SIGMAS:
             r = 15
         else:
-            r = int ((SIGMAS[name] - 0.1*SIGMAS[name])*0.5)
+            r = int ((SIGMAS[name] - 0.1*SIGMAS[name])*0.5 *0.5) #one half for the radius and then another to use only half radius as it is supposed to give better results
         #print(name, r)
         x, y, z = coord
         centers.append([x, y, z])
