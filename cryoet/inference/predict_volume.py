@@ -64,24 +64,24 @@ def predict_volume(
         sigma=sigma
     )
 
-    for i in range(len(scores)):
-        heatmap = scores[i][0]
-        print('heatmap.shape: ',heatmap.shape)
-        heatmap = torch.sigmoid(heatmap)
-        heatmap = (heatmap - heatmap.min()) / (heatmap.max() - heatmap.min() + 1e-8)
-        heatmap = heatmap.unsqueeze(0).unsqueeze(0)
-        orig_shape = volume.shape  
-        heatmap_up = F.interpolate(
-            heatmap,
-            size=orig_shape,
-            mode="trilinear",  
-            align_corners=False
-            )
-        heatmap_up = heatmap_up[0,0]
-        heatmap_np = heatmap_up.cpu().numpy().astype(np.float32) 
-        with mrcfile.new(f'{study_name}_predicted_heatmap_{i}.mrc', overwrite=True) as mrc:
-            mrc.set_data(heatmap_np)
-            mrc.voxel_size = 1.0
+    # for i in range(len(scores)):
+    #     heatmap = scores[i][0]
+    #     print('heatmap.shape: ',heatmap.shape)
+    #     heatmap = torch.sigmoid(heatmap)
+    #     heatmap = (heatmap - heatmap.min()) / (heatmap.max() - heatmap.min() + 1e-8)
+    #     heatmap = heatmap.unsqueeze(0).unsqueeze(0)
+    #     orig_shape = volume.shape  
+    #     heatmap_up = F.interpolate(
+    #         heatmap,
+    #         size=orig_shape,
+    #         mode="trilinear",  
+    #         align_corners=False
+    #         )
+    #     heatmap_up = heatmap_up[0,0]
+    #     heatmap_np = heatmap_up.cpu().numpy().astype(np.float32) 
+    #     with mrcfile.new(f'{study_name}_predicted_heatmap_{i}.mrc', overwrite=True) as mrc:
+    #         mrc.set_data(heatmap_np)
+    #         mrc.voxel_size = 1.0
 
     submission = postprocess_scores_offsets_into_submission(
         scores=scores,
