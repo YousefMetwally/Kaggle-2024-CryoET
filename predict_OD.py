@@ -17,7 +17,7 @@ from pathlib import Path
 
 
 TARGET_SIGMAS = [6]
-CLASS_LABEL_TO_CLASS_NAME = {'0' : 'Particle'}
+CLASS_LABEL_TO_CLASS_NAME = {0 : 'Particle'}
 
 
 
@@ -261,7 +261,8 @@ def main():
 ]
     submission.to_csv(f"{CSV_PATH}", index=False)
 
-
+if __name__ == "__main__":
+    main()
 
 
 
